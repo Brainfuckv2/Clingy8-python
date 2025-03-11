@@ -25,7 +25,7 @@ class Clingy8VM:
         self.LPTR = 0     # Текущая лента
         self.PPTR = 0     # Указатель инструкций
         self.DPTR = 0     # Указатель данных
-        self.JPTR = None  # Указатель цикла
+        self.JPTR = 0     # Указатель цикла
         
     def prettify_tape(self, tape):
         tape_size = len(tape)
@@ -87,7 +87,7 @@ class Clingy8VM:
                         depth -= 1
         elif token == ']':
             if self.tapes[self.LPTR][self.DPTR] == 0:
-                self.JPTR = None
+                self.JPTR = 0
             else:
                 self.PPTR = self.JPTR - 1  # Возврат к началу цикла
         elif token == '.':
