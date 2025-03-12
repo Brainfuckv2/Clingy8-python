@@ -55,53 +55,72 @@ class Clingy8VM:
     def run(self):
         while self.PPTR < len(self.tokens):
             token = self.tokens[self.PPTR]
-            self.execute_token(token)
-            self.PPTR += 1
+            
+            # Сбор аргументов для отладки
+            debug_args = []
+            if token in ['@', ':']:
+                if self.PPTR + 1 < len(self.tokens):
+                    debug_args.append(self.tokens[self.PPTR + 1])
+            elif token in ['+', '-', '!', '?', '~']:
+                if self.PPTR + 2 < len(self.tokens):
+                    debug_args.extend(self.tokens[self.PPTR + 1:self.PPTR + 3])
             
             if self.debug:
-                self.print_debug(token)
+                self.print_debug(token, debug_args)
                 time.sleep(self.debug_delay)
+            
+            self.execute_token(token)
     
     def execute_token(self, token):
         if token == '@':
-            self.PPTR += 1
+            self.PPTR += 1  # Переходим к аргументу
             self.LPTR = int(self.tokens[self.PPTR], 16)
             if self.LPTR not in self.tapes:
-                self.tapes[self.LPTR] = [0] * 256
+                print(f"Ошибка: несуществующая лента '{self.LPTR}'")
+                sys.exit(1)
+            self.PPTR += 1  # Следующая инструкция
+            
         elif token == ':':
-            self.PPTR += 1
+            self.PPTR += 1  # Переходим к аргументу
             self.DPTR = int(self.tokens[self.PPTR], 16)
+            self.PPTR += 1  # Следующая инструкция
+            
         elif token in ['+', '-', '!', '?', '~']:
             self.handle_operation(token)
+            
         elif token == '[':
             if self.tapes[self.LPTR][self.DPTR] != 0:
-                self.JPTR = self.PPTR  # Сохраняем указатель начала цикла
+                self.JPTR = self.PPTR
+                self.PPTR += 1
             else:
                 # Пропускаем цикл
                 depth = 1
+                self.PPTR += 1
                 while self.PPTR < len(self.tokens) and depth > 0:
-                    self.PPTR += 1
                     if self.tokens[self.PPTR] == '[':
                         depth += 1
                     elif self.tokens[self.PPTR] == ']':
                         depth -= 1
+                    self.PPTR += 1
+                    
         elif token == ']':
             if self.tapes[self.LPTR][self.DPTR] == 0:
                 self.JPTR = 0
+                self.PPTR += 1
             else:
-                self.PPTR = self.JPTR - 1  # Возврат к началу цикла
+                self.PPTR = self.JPTR  # Возврат к началу цикла
+                
         elif token == '.':
             print(self.prettify_tape(self.tapes[2]))
             sys.exit(0)
+            
         else:
             print(f"Ошибка: неизвестный токен '{token}'")
             sys.exit(1)
     
     def handle_operation(self, operation):
-        self.PPTR += 1
-        interface = self.tokens[self.PPTR]
-        self.PPTR += 1
-        data = self.tokens[self.PPTR]
+        interface = self.tokens[self.PPTR + 1]
+        data = self.tokens[self.PPTR + 2]
         
         if operation == '+':
             self.tapes[self.LPTR][self.DPTR] += self.get_value(interface, data)
@@ -137,9 +156,12 @@ class Clingy8VM:
             else:
                 print(f"Ошибка: некорректный аргумент '{interface}{data}'")
                 sys.exit(1)
+        
+        self.PPTR += 3  # Операция + интерфейс + данные
     
-    def print_debug(self, token):
-        print(f"Token: `{token}`")
+    def print_debug(self, token, args):
+        args_str = ' '.join([f'`{arg}`' for arg in args]) if args else ''
+        print(f"Token: `{token}` {args_str}".strip())
         print(f"LPTR: {self.LPTR}, PPTR: {self.PPTR}, DPTR: {self.DPTR}, JPTR: {self.JPTR}")
         print(f"TAPE{self.LPTR}: {self.tapes[self.LPTR][:10]}")
         print(f"Registers: {self.registers}")
