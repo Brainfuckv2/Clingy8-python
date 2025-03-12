@@ -72,90 +72,95 @@ class Clingy8VM:
             self.execute_token(token)
     
     def execute_token(self, token):
-        if token == '@':
-            self.PPTR += 1  # Переходим к аргументу
-            self.LPTR = int(self.tokens[self.PPTR], 16)
-            if self.LPTR not in self.tapes:
-                print(f"Ошибка: несуществующая лента '{self.LPTR}'")
-                sys.exit(1)
-            self.PPTR += 1  # Следующая инструкция
-            
-        elif token == ':':
-            self.PPTR += 1  # Переходим к аргументу
-            self.DPTR = int(self.tokens[self.PPTR], 16)
-            self.PPTR += 1  # Следующая инструкция
-            
-        elif token in ['+', '-', '!', '?', '~']:
-            self.handle_operation(token)
-            
-        elif token == '[':
-            if self.tapes[self.LPTR][self.DPTR] != 0:
-                self.JPTR = self.PPTR
-                self.PPTR += 1
-            else:
-                # Пропускаем цикл
-                depth = 1
-                self.PPTR += 1
-                while self.PPTR < len(self.tokens) and depth > 0:
-                    if self.tokens[self.PPTR] == '[':
-                        depth += 1
-                    elif self.tokens[self.PPTR] == ']':
-                        depth -= 1
-                    self.PPTR += 1
-                    
-        elif token == ']':
-            if self.tapes[self.LPTR][self.DPTR] == 0:
-                self.JPTR = 0
-                self.PPTR += 1
-            else:
-                self.PPTR = self.JPTR  # Возврат к началу цикла
+        match token:
+            case '@':
+                self.PPTR += 1  # Переходим к аргументу
+                self.LPTR = int(self.tokens[self.PPTR], 16)
+                if self.LPTR not in self.tapes:
+                    print(f"Ошибка: несуществующая лента '{self.LPTR}'")
+                    sys.exit(1)
+                self.PPTR += 1  # Следующая инструкция
                 
-        elif token == '.':
-            print(self.prettify_tape(self.tapes[2]))
-            sys.exit(0)
-            
-        else:
-            print(f"Ошибка: неизвестный токен '{token}'")
-            sys.exit(1)
+            case ':':
+                self.PPTR += 1  # Переходим к аргументу
+                self.DPTR = int(self.tokens[self.PPTR], 16)
+                self.PPTR += 1  # Следующая инструкция
+                
+            case '+' | '-' | '!' | '?' | '~':
+                self.handle_operation(token)
+                
+            case '[':
+                if self.tapes[self.LPTR][self.DPTR] != 0:
+                    self.JPTR = self.PPTR
+                    self.PPTR += 1
+                else:
+                    # Пропускаем цикл
+                    depth = 1
+                    self.PPTR += 1
+                    while self.PPTR < len(self.tokens) and depth > 0:
+                        if self.tokens[self.PPTR] == '[':
+                            depth += 1
+                        elif self.tokens[self.PPTR] == ']':
+                            depth -= 1
+                        self.PPTR += 1
+                        
+            case ']':
+                if self.tapes[self.LPTR][self.DPTR] == 0:
+                    self.JPTR = 0
+                    self.PPTR += 1
+                else:
+                    self.PPTR = self.JPTR  # Возврат к началу цикла
+                    
+            case '.':
+                print(self.prettify_tape(self.tapes[2]))
+                sys.exit(0)
+                
+            case _:
+                print(f"Ошибка: неизвестный токен '{token}'")
+                sys.exit(1)
     
     def handle_operation(self, operation):
         interface = self.tokens[self.PPTR + 1]
         data = self.tokens[self.PPTR + 2]
         
-        if operation == '+':
-            self.tapes[self.LPTR][self.DPTR] += self.get_value(interface, data)
-        elif operation == '-':
-            self.tapes[self.LPTR][self.DPTR] -= self.get_value(interface, data)
-        elif operation == '!':
-            if interface == ':':
-                addr = int(data, 16)
-                self.tapes[self.LPTR][addr] = self.tapes[self.LPTR][self.DPTR]
-            elif interface == '&':
-                reg = int(data, 16)
-                self.registers[reg] = self.tapes[self.LPTR][self.DPTR]
-            else:
-                print(f"Ошибка: некорректный аргумент '{interface}{data}'")
-                sys.exit(1)
-        elif operation == '?':
-            if interface == '@':
-                self.tapes[self.LPTR][self.DPTR] = self.LPTR
-            else:
-                self.tapes[self.LPTR][self.DPTR] = self.get_value(interface, data)
-        elif operation == '~':
-            if interface == ':':
-                addr = int(data, 16)
-                current = self.tapes[self.LPTR][self.DPTR]
-                target = self.tapes[self.LPTR][addr]
-                self.tapes[self.LPTR][self.DPTR] = target
-                self.tapes[self.LPTR][addr] = current
-            elif interface == '&':
-                reg = int(data, 16)
-                current = self.tapes[self.LPTR][self.DPTR]
-                self.tapes[self.LPTR][self.DPTR] = self.registers[reg]
-                self.registers[reg] = current
-            else:
-                print(f"Ошибка: некорректный аргумент '{interface}{data}'")
-                sys.exit(1)
+        match operation:
+            case '+':
+                self.tapes[self.LPTR][self.DPTR] += self.get_value(interface, data)
+            case '-':
+                self.tapes[self.LPTR][self.DPTR] -= self.get_value(interface, data)
+            case '!':
+                match interface:
+                    case ':':
+                        addr = int(data, 16)
+                        self.tapes[self.LPTR][addr] = self.tapes[self.LPTR][self.DPTR]
+                    case '&':
+                        reg = int(data, 16)
+                        self.registers[reg] = self.tapes[self.LPTR][self.DPTR]
+                    case _:
+                        print(f"Ошибка: некорректный аргумент '{interface}{data}'")
+                        sys.exit(1)
+            case '?':
+                match interface:
+                    case '@':
+                        self.tapes[self.LPTR][self.DPTR] = self.LPTR
+                    case _:
+                        self.tapes[self.LPTR][self.DPTR] = self.get_value(interface, data)
+            case '~':
+                match interface:
+                    case ':':
+                        addr = int(data, 16)
+                        current = self.tapes[self.LPTR][self.DPTR]
+                        target = self.tapes[self.LPTR][addr]
+                        self.tapes[self.LPTR][self.DPTR] = target
+                        self.tapes[self.LPTR][addr] = current
+                    case '&':
+                        reg = int(data, 16)
+                        current = self.tapes[self.LPTR][self.DPTR]
+                        self.tapes[self.LPTR][self.DPTR] = self.registers[reg]
+                        self.registers[reg] = current
+                    case _:
+                        print(f"Ошибка: некорректный аргумент '{interface}{data}'")
+                        sys.exit(1)
         
         self.PPTR += 3  # Операция + интерфейс + данные
     
