@@ -42,15 +42,16 @@ class Clingy8VM:
         return self.registers.get(int(reg, 16), 0)
     
     def get_value(self, interface, data):
-        if interface == '$':
-            return int(data, 16)
-        elif interface == ':':
-            return self.tapes[self.LPTR][int(data, 16)]
-        elif interface == '&':
-            return self.registers.get(int(data, 16), 0)
-        else:
-            print(f"Ошибка: некорректный аргумент '{interface}{data}'")
-            sys.exit(1)
+        match interface:
+            case '$':
+                return int(data, 16)
+            case ':':
+                return self.tapes[self.LPTR][int(data, 16)]
+            case '&':
+                return self.registers.get(int(data, 16), 0)
+            case _:
+                print(f"Ошибка: некорректный аргумент '{interface}{data}'")
+                sys.exit(1)
     
     def run(self):
         while self.PPTR < len(self.tokens):
@@ -168,7 +169,10 @@ class Clingy8VM:
         args_str = ' '.join([f'`{arg}`' for arg in args]) if args else ''
         print(f"Token: `{token}` {args_str}".strip())
         print(f"LPTR: {self.LPTR}, PPTR: {self.PPTR}, DPTR: {self.DPTR}, JPTR: {self.JPTR}")
-        print(f"TAPE{self.LPTR}: {self.tapes[self.LPTR][:10]}")
+        # print(f"TAPE{self.LPTR}: {self.tapes[self.LPTR]}")
+        print(f"TAPE{0}: {self.tapes[0]}")
+        print(f"TAPE{1}: {self.tapes[1]}")
+        print(f"TAPE{2}: {self.tapes[2]}")
         print(f"Registers: {self.registers}")
         print("---")
 
