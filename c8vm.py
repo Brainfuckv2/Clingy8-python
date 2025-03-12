@@ -64,12 +64,12 @@ class Clingy8VM:
             elif token in ['+', '-', '!', '?', '~']:
                 if self.PPTR + 2 < len(self.tokens):
                     debug_args.extend(self.tokens[self.PPTR + 1:self.PPTR + 3])
+
+            self.execute_token(token)
             
             if self.debug:
                 self.print_debug(token, debug_args)
                 time.sleep(self.debug_delay)
-            
-            self.execute_token(token)
     
     def execute_token(self, token):
         match token:
