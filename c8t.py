@@ -1,42 +1,49 @@
 #!/usr/bin/env python
 
-import re
-import sys
 import argparse
+import re
+import os
 
-def tokenize_code(code: str):
-    lines = [re.split(r'\s*\|', line.strip())[0] for line in code.splitlines() if line.strip()]
-    tokens = []
-    for line in lines:
-        tokens.extend(re.findall(r'[@$&:]|\d{2}|[+\-!?~.:\[\]]', line))
-    return tokens
+def process_text(text):
+    # Удаляем все пробелы
+    text = text.replace(' ', '')
+    
+    # Разбиваем на строки и обрезаем каждую до первого |
+    lines = text.split('\n')
+    processed_lines = [line.split('|', 1)[0] for line in lines]
+    text = '\n'.join(processed_lines)
+    
+    # Удаляем все переносы строк
+    text = text.replace('\n', '')
+    
+    # Добавляем пробелы перед указанными символами
+    chars_to_space = r'([+\-~\.\[!?@$&:\]])'
+    text = re.sub(chars_to_space, r'\1 ', text)
+    
+    # Добавляем пробелы перед hex-парами (00-FF)
+    text = re.sub(r'([0-9A-Fa-f]{2})', r'\1 ', text)
+    
+    return text
 
 def main():
-    parser = argparse.ArgumentParser(description='Tokenize C8 assembly-like code')
-    parser.add_argument('-i', '--input', help='Input file path')
-    parser.add_argument('-o', '--output', help='Output file path')
-    parser.add_argument('code', nargs='?', help='Direct code input')
-    
+    parser = argparse.ArgumentParser(description='Токенизация Clingy8 Asm')
+    parser.add_argument('-i', required=True, help='Входная строка или путь к файлу')
+    parser.add_argument('-o', help='Путь к выходному файлу (если не указано - вывод в stdout)')
     args = parser.parse_args()
-
-    if args.input:
-        with open(args.input, 'r') as file:
-            code = file.read()
-    elif args.code:
-        code = args.code
-    else:
-        print("Error: No input provided. Use -i for file input or provide code directly.")
-        sys.exit(1)
-
-    tokens = tokenize_code(code)
     
-    if args.output:
-        with open(args.output, 'w') as file:
-            file.write(' '.join(tokens))
-        print(f"Tokens written to {args.output}")
+    if os.path.isfile(args.i):
+        with open(args.i, 'r', encoding='utf-8') as f:
+            input_text = f.read()
     else:
-        print(' '.join(tokens))
+        input_text = args.i
+    
+    processed_text = process_text(input_text)
+    
+    if args.o:
+        with open(args.o, 'w', encoding='utf-8') as f:
+            f.write(processed_text)
+    else:
+        print(processed_text)
 
 if __name__ == "__main__":
-    raise Exception("Сейчас токенизатор неправильно токенизирует код. Пожалуйста подождите пока мы это исправим.")
-    # main()
+    main()
