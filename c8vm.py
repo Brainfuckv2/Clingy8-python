@@ -15,11 +15,11 @@ class Clingy8VM:
         self.tapes = {
             0: self.tokens.copy(),  # Код программы неизменяем
             1: [0] * tape_size,
-            2: [0] * tape_size
         }
         
         # Регистры
-        self.registers = {i: 0 for i in range(4)}
+        self.registers = {i: 0 for i in range(0x00, 0x04)}
+        self.registers |= {i: 0 for i in range(0x10, 0x1F)}
         
         # Указатели
         self.LPTR = 0     # Текущая лента
@@ -113,7 +113,6 @@ class Clingy8VM:
                     self.PPTR = self.JPTR  # Возврат к началу цикла
                     
             case '.':
-                print(self.prettify_tape(self.tapes[2]))
                 sys.exit(0)
                 
             case _:
@@ -137,6 +136,9 @@ class Clingy8VM:
                     case '&':
                         reg = int(data, 16)
                         self.registers[reg] = self.tapes[self.LPTR][self.DPTR]
+                        if 0x11 <= reg <= 0x1F:  # Если это I/O-регистр
+                            sys.stdout.write(chr(self.registers[reg]))  # Выводим символ (VM-only feature)
+                            sys.stdout.flush()
                     case _:
                         print(f"Ошибка: некорректный аргумент '{interface}{data}'")
                         sys.exit(1)
@@ -144,6 +146,14 @@ class Clingy8VM:
                 match interface:
                     case '@':
                         self.tapes[self.LPTR][self.DPTR] = self.LPTR
+                    case '&':
+                        reg = int(data, 16)
+                        if 0x10 <= reg <= 0x1F:  # Если это I/O-регистр
+                            try:
+                                self.registers[reg] = ord(sys.stdin.read(1))  # Читаем 1 байт
+                            except:
+                                self.registers[reg] = 0  # Если данных нет, вернуть 0
+                        self.tapes[self.LPTR][self.DPTR] = self.registers[reg]
                     case _:
                         self.tapes[self.LPTR][self.DPTR] = self.get_value(interface, data)
             case '~':
@@ -164,6 +174,7 @@ class Clingy8VM:
                         sys.exit(1)
         
         self.PPTR += 3  # Операция + интерфейс + данные
+
     
     def print_debug(self, token, args):
         args_str = ' '.join([f'`{arg}`' for arg in args]) if args else ''
@@ -172,7 +183,6 @@ class Clingy8VM:
         # print(f"TAPE{self.LPTR}: {self.tapes[self.LPTR]}")
         print(f"TAPE{0}: {self.tapes[0]}")
         print(f"TAPE{1}: {self.tapes[1]}")
-        print(f"TAPE{2}: {self.tapes[2]}")
         print(f"Registers: {self.registers}")
         print("---")
 
