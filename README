@@ -9,6 +9,9 @@ VM-only features:
 - I/O registres, output in stdout
 
 How to use?
-Tokenize program                         | `./c8t.py -i examples/fib.c8 -o examples/fib.t`
-To run tokenized program                 | `./c8vm.py examples/fib.t`
-To run tokenized program with debug info | `./c8vm.py examples/fib.t --debug` (or simply -d)
+Tokenize program
+| `./c8t.py -i examples/fib.c8 -o examples/fib.t`
+To run tokenized program
+| `./c8vm.py examples/fib.t`
+To run tokenized program with debug info
+| `./c8vm.py examples/fib.t --debug` (or simply -d)
